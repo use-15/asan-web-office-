@@ -1,29 +1,31 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { Ribbon, RibbonGroup, RibbonButton } from './components/layout/Ribbon'
-import { Toolbar } from './components/layout/Toolbar'
 import { WordCanvas, type WordCanvasHandle } from './modules/word/WordCanvas'
 import { SheetCanvas } from './modules/sheet/SheetCanvas'
 import { SlideCanvas } from './modules/slide/SlideCanvas'
 import { PDFCanvas } from './modules/pdf/PDFCanvas'
 import { saveDocument } from './core/storage/db'
 import { cn } from './lib/utils'
-import { FileText, Table, Presentation, FileCode, Save, FilePlus, FolderOpen, Share2, Printer, Search, Scissors, Copy, Clipboard as Paste, Type } from 'lucide-react'
+import {
+  FilePlus, FolderOpen, Save,
+  Search, Scissors, Copy, Clipboard as Paste, Type,
+  Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  List, ListOrdered, Indent, Outdent, Highlighter, Type as FontColor,
+  ChevronDown, Mic, CheckCircle2, Wand2, Eraser, Baseline
+} from 'lucide-react'
 
 type AppModule = 'Word' | 'Sheet' | 'Slide' | 'PDF' | 'Home';
 
 function App() {
-  const [activeModule, setActiveModule] = useState<AppModule>('Home');
+  const [activeModule, setActiveModule] = useState<AppModule>('Word');
   const [activeTab, setActiveTab] = useState('home');
   const wordRef = useRef<WordCanvasHandle>(null);
   const [, setLastSaved] = useState<number>(0);
 
   const handleSave = useCallback(async () => {
     if (activeModule === 'Home') return;
-
-    // In a real implementation, we'd grab the state from the active engine
     const mockContent = { timestamp: Date.now(), data: "Engine state placeholder" };
-
     await saveDocument({
       id: `doc_${activeModule.toLowerCase()}`,
       name: `My ${activeModule} Document`,
@@ -32,51 +34,28 @@ function App() {
       content: mockContent
     });
     setLastSaved(Date.now());
-    console.log(`Auto-saved Asan ${activeModule}`);
   }, [activeModule]);
 
-  // Debounced Auto-save effect
   useEffect(() => {
     if (activeModule === 'Home') return;
-
     const timer = setTimeout(() => {
       handleSave().catch(console.error);
-    }, 5000); // Auto-save every 5 seconds if active
-
+    }, 5000);
     return () => clearTimeout(timer);
   }, [activeModule, handleSave]);
 
   const renderRibbon = () => {
-    const commonFileGroup = (
-      <RibbonGroup label="File">
-        <RibbonButton icon={<FilePlus className="w-5 h-5" />} label="New" large />
-        <RibbonButton icon={<FolderOpen className="w-5 h-5" />} label="Open" large />
-        <RibbonButton icon={<Save className="w-5 h-5" />} label="Save" large onClick={handleSave} />
-        <RibbonButton icon={<FileText className="w-5 h-5" />} label="Export" large onClick={() => wordRef.current?.exportDocx()} />
-      </RibbonGroup>
-    );
-
-    const commonClipboardGroup = (
-      <RibbonGroup label="Clipboard">
-        <RibbonButton icon={<Paste className="w-5 h-5" />} label="Paste" large />
-        <div className="flex flex-col space-y-1">
-          <RibbonButton icon={<Scissors className="w-3 h-3" />} label="Cut" />
-          <RibbonButton icon={<Copy className="w-3 h-3" />} label="Copy" />
-        </div>
-      </RibbonGroup>
-    );
-
     const tabs = [
       {
         id: 'file',
         label: 'File',
         content: (
           <div className="flex h-full">
-            {commonFileGroup}
-            <RibbonGroup label="Share">
-              <RibbonButton icon={<Share2 className="w-5 h-5" />} label="Share" large />
-              <RibbonButton icon={<Printer className="w-5 h-5" />} label="Print" large />
-            </RibbonGroup>
+             <RibbonGroup label="File">
+                <RibbonButton icon={<FilePlus className="w-5 h-5" />} label="New" large />
+                <RibbonButton icon={<FolderOpen className="w-5 h-5" />} label="Open" large />
+                <RibbonButton icon={<Save className="w-5 h-5" />} label="Save" large onClick={handleSave} />
+             </RibbonGroup>
           </div>
         )
       },
@@ -85,25 +64,93 @@ function App() {
         label: 'Home',
         content: (
           <div className="flex h-full">
-            {commonClipboardGroup}
-            <RibbonGroup label="Editing">
-              <RibbonButton icon={<Search className="w-5 h-5" />} label="Find" />
-              <RibbonButton icon={<Type className="w-5 h-5" />} label="Replace" />
+            <RibbonGroup label="Clipboard">
+              <RibbonButton icon={<Paste className="w-6 h-6" />} label="Paste" large />
+              <div className="flex flex-col">
+                <RibbonButton icon={<Scissors className="w-3.5 h-3.5" />} label="Cut" />
+                <RibbonButton icon={<Copy className="w-3.5 h-3.5" />} label="Copy" />
+                <RibbonButton icon={<Wand2 className="w-3.5 h-3.5" />} label="Format Painter" />
+              </div>
             </RibbonGroup>
-          </div>
-        )
-      },
-      {
-        id: 'insert',
-        label: 'Insert',
-        content: (
-          <div className="flex h-full">
-             <RibbonGroup label="Pages">
-                <RibbonButton icon={<FileText className="w-5 h-5" />} label="Blank Page" large />
-             </RibbonGroup>
-             <RibbonGroup label="Tables">
-                <RibbonButton icon={<Table className="w-5 h-5" />} label="Table" large />
-             </RibbonGroup>
+
+            <RibbonGroup label="Font">
+               <div className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-1">
+                     <div className="bg-white border border-[#edebe9] px-2 py-0.5 text-[11px] flex items-center min-w-[100px]">
+                        Calibri (Body) <ChevronDown className="w-3 h-3 ml-auto opacity-60" />
+                     </div>
+                     <div className="bg-white border border-[#edebe9] px-2 py-0.5 text-[11px] flex items-center min-w-[40px]">
+                        11 <ChevronDown className="w-3 h-3 ml-auto opacity-60" />
+                     </div>
+                     <div className="flex items-center">
+                        <RibbonButton icon={<Baseline className="w-3.5 h-3.5" />} label="" />
+                        <RibbonButton icon={<Baseline className="w-2.5 h-2.5" />} label="" />
+                        <div className="w-px h-4 bg-[#edebe9] mx-1" />
+                        <RibbonButton icon={<Eraser className="w-3.5 h-3.5" />} label="" />
+                     </div>
+                  </div>
+                  <div className="flex items-center">
+                     <RibbonButton icon={<Bold className="w-3.5 h-3.5" />} label="" onClick={() => wordRef.current?.command('bold')} />
+                     <RibbonButton icon={<Italic className="w-3.5 h-3.5" />} label="" onClick={() => wordRef.current?.command('italic')} />
+                     <RibbonButton icon={<Underline className="w-3.5 h-3.5" />} label="" onClick={() => wordRef.current?.command('underline')} />
+                     <RibbonButton icon={<Strikethrough className="w-3.5 h-3.5" />} label="" />
+                     <div className="w-px h-4 bg-[#edebe9] mx-1" />
+                     <RibbonButton icon={<Highlighter className="w-3.5 h-3.5" />} label="" />
+                     <RibbonButton icon={<FontColor className="w-3.5 h-3.5" />} label="" />
+                  </div>
+               </div>
+            </RibbonGroup>
+
+            <RibbonGroup label="Paragraph">
+                <div className="flex flex-col space-y-1">
+                    <div className="flex items-center">
+                        <List className="w-3.5 h-3.5" />
+                        <ListOrdered className="w-3.5 h-3.5 ml-2" />
+                        <div className="w-px h-4 bg-[#edebe9] mx-2" />
+                        <Outdent className="w-3.5 h-3.5" />
+                        <Indent className="w-3.5 h-3.5 ml-2" />
+                    </div>
+                    <div className="flex items-center">
+                        <AlignLeft className="w-3.5 h-3.5" />
+                        <AlignCenter className="w-3.5 h-3.5 ml-2" />
+                        <AlignRight className="w-3.5 h-3.5 ml-2" />
+                        <AlignJustify className="w-3.5 h-3.5 ml-2" />
+                    </div>
+                </div>
+            </RibbonGroup>
+
+            <RibbonGroup label="Styles">
+               <div className="flex items-center space-x-1">
+                  <div className="w-20 h-12 bg-white border border-[#edebe9] flex flex-col items-center justify-center rounded-sm cursor-pointer hover:bg-slate-50">
+                     <span className="text-blue-600 font-bold text-sm">AaBbCc</span>
+                     <span className="text-[9px]">Normal</span>
+                  </div>
+                  <div className="w-20 h-12 bg-white border border-[#edebe9] flex flex-col items-center justify-center rounded-sm cursor-pointer hover:bg-slate-50">
+                     <span className="font-bold text-sm">AaBbCc</span>
+                     <span className="text-[9px]">No Spacing</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 opacity-40 cursor-pointer" />
+               </div>
+            </RibbonGroup>
+
+            <RibbonGroup label="Editing">
+               <div className="flex flex-col">
+                  <div className="flex items-center px-2 py-0.5 hover:bg-slate-100 cursor-pointer text-xs">
+                     <Search className="w-3.5 h-3.5 mr-2" /> Find
+                  </div>
+                  <div className="flex items-center px-2 py-0.5 hover:bg-slate-100 cursor-pointer text-xs">
+                     <Type className="w-3.5 h-3.5 mr-2" /> Replace
+                  </div>
+               </div>
+            </RibbonGroup>
+
+            <RibbonGroup label="Voice">
+                <RibbonButton icon={<Mic className="w-6 h-6 text-[#2b579a]" />} label="Dictate" large />
+            </RibbonGroup>
+
+            <RibbonGroup label="Editor">
+                <RibbonButton icon={<CheckCircle2 className="w-6 h-6 text-blue-500" />} label="Editor" large />
+            </RibbonGroup>
           </div>
         )
       }
@@ -117,14 +164,11 @@ function App() {
       activeModule={activeModule}
       onModuleChange={setActiveModule}
       ribbon={renderRibbon()}
-      toolbar={<Toolbar onCommand={(type, val) => wordRef.current?.command(type, val)} />}
     >
       {activeModule === 'Home' && (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#faf9f8]">
           <h1 className="text-5xl font-extrabold mb-4 text-[#005a9e] tracking-tight">Asan Office</h1>
-          <p className="text-xl text-slate-600 mb-12 max-w-2xl font-light">
-            High-performance, offline-first productivity suite.
-          </p>
+          <p className="text-xl text-slate-600 mb-12 max-w-2xl font-light">Professional productivity suite.</p>
           <div className="grid grid-cols-2 gap-6 w-full max-w-3xl">
             {(['Word', 'Sheet', 'Slide', 'PDF'] as AppModule[]).map((mod) => (
               <button
@@ -134,19 +178,9 @@ function App() {
               >
                 <div className={cn(
                   "absolute top-0 left-0 w-1.5 h-full transition-all group-hover:w-3",
-                  mod === 'Word' ? 'bg-[#2b579a]' :
-                  mod === 'Sheet' ? 'bg-[#217346]' :
-                  mod === 'Slide' ? 'bg-[#d24726]' :
-                  'bg-[#b30b00]'
+                  mod === 'Word' ? 'bg-[#2b579a]' : mod === 'Sheet' ? 'bg-[#217346]' : mod === 'Slide' ? 'bg-[#d24726]' : 'bg-[#b30b00]'
                 )} />
-                <div className="flex items-center mb-4">
-                  {mod === 'Word' && <FileText className="w-8 h-8 text-[#2b579a] mr-3" />}
-                  {mod === 'Sheet' && <Table className="w-8 h-8 text-[#217346] mr-3" />}
-                  {mod === 'Slide' && <Presentation className="w-8 h-8 text-[#d24726] mr-3" />}
-                  {mod === 'PDF' && <FileCode className="w-8 h-8 text-[#b30b00] mr-3" />}
-                  <h2 className="text-2xl font-bold group-hover:translate-x-1 transition-transform">Asan {mod}</h2>
-                </div>
-                <p className="text-sm text-slate-500 font-medium">Professional {mod.toLowerCase()} document processing.</p>
+                <h2 className="text-2xl font-bold group-hover:translate-x-1 transition-transform">Asan {mod}</h2>
               </button>
             ))}
           </div>
@@ -154,22 +188,15 @@ function App() {
       )}
 
       {activeModule !== 'Home' && (
-        <div className="flex-1 overflow-auto flex justify-center p-8">
+        <div className="flex-1 overflow-hidden">
            {activeModule === 'Word' ? (
              <WordCanvas ref={wordRef} />
            ) : activeModule === 'Sheet' ? (
              <SheetCanvas />
            ) : activeModule === 'Slide' ? (
              <SlideCanvas />
-           ) : activeModule === 'PDF' ? (
-             <PDFCanvas />
            ) : (
-             <div className="bg-white w-[816px] min-h-[1056px] shadow-2xl relative flex flex-col p-16 items-center justify-center text-slate-400 border border-[#edebe9]">
-                 <div className="text-center animate-pulse">
-                   <p className="text-3xl font-bold mb-4">Asan {activeModule}</p>
-                   <p className="text-sm uppercase tracking-widest font-semibold">Engine Initializing...</p>
-                 </div>
-             </div>
+             <PDFCanvas />
            )}
         </div>
       )}
