@@ -1,40 +1,61 @@
-import React, { useRef, useEffect } from 'react'
-import { WordEngine } from './WordEngine'
+import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
+import Editor from '@hufe921/canvas-editor'
 
-export const WordCanvas: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engineRef = useRef<WordEngine>(new WordEngine());
+export interface WordCanvasHandle {
+  exportDocx: () => void;
+  command: (type: string, value?: any) => void;
+}
+
+export const WordCanvas = forwardRef<WordCanvasHandle, {}>((_props, ref) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    exportDocx: () => {
+       // @ts-ignore
+       editorRef.current?.command.executeDownload();
+    },
+    command: (type: string, value?: any) => {
+        if (!editorRef.current) return;
+        switch(type) {
+            case 'bold': editorRef.current.command.executeBold(); break;
+            case 'italic': editorRef.current.command.executeItalic(); break;
+            case 'underline': editorRef.current.command.executeUnderline(); break;
+            case 'fontSize': editorRef.current.command.executeSize(value); break;
+            case 'fontFamily': editorRef.current.command.executeFont(value); break;
+        }
+    }
+  }));
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!containerRef.current) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const render = () => {
-      engineRef.current.render(ctx, { x: 0, y: 0, width: canvas.width, height: canvas.height });
-      requestAnimationFrame(render);
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      engineRef.current.handleInput({ type: 'keydown', key: e.key });
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    render();
+    editorRef.current = new Editor(containerRef.current, [
+      {
+        value: "Welcome to Asan Word\n",
+        size: 32,
+        bold: true,
+        color: '#2b579a'
+      },
+      {
+        value: "The most powerful canvas-based editor for the web.",
+        size: 16
+      }
+    ], {
+        margins: [100, 100, 100, 100]
+    });
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      editorRef.current?.destroy();
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={816}
-      height={1056}
-      className="bg-white shadow-lg cursor-text"
-    />
+    <div className="bg-[#dadad9] p-8 min-h-full flex justify-center overflow-auto">
+      <div
+        ref={containerRef}
+        className="bg-white shadow-2xl border border-[#edebe9]"
+      />
+    </div>
   )
-}
+});

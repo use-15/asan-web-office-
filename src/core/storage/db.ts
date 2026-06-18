@@ -1,11 +1,11 @@
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB } from 'idb';
 
 export interface AsanDocumentMetadata {
   id: string;
   name: string;
-  type: 'word' | 'sheet' | 'slide' | 'pdf';
+  type: 'Word' | 'Sheet' | 'Slide' | 'PDF';
   lastModified: number;
-  opfsPath?: string; // If stored in OPFS
+  content: unknown; // Serialized engine state
 }
 
 const DB_NAME = 'AsanOfficeDB';
@@ -21,10 +21,17 @@ export async function initDB() {
   });
 }
 
-export async function saveDocumentMetadata(db: IDBPDatabase, meta: AsanDocumentMetadata) {
+export async function saveDocument(meta: AsanDocumentMetadata) {
+  const db = await initDB();
   await db.put(STORE_NAME, meta);
 }
 
-export async function getAllDocuments(db: IDBPDatabase): Promise<AsanDocumentMetadata[]> {
+export async function getDocument(id: string): Promise<AsanDocumentMetadata | undefined> {
+  const db = await initDB();
+  return db.get(STORE_NAME, id);
+}
+
+export async function getAllDocuments(): Promise<AsanDocumentMetadata[]> {
+  const db = await initDB();
   return db.getAll(STORE_NAME);
 }
