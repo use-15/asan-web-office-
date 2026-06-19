@@ -1,42 +1,113 @@
 import { DocumentEngine, type Rect } from '../../core/engine/types';
-
-export interface TextBlock {
-  text: string;
-  font: string;
-  fontSize: number;
-  color: string;
-  x: number;
-  y: number;
-}
+import { type WordDocument } from './types';
 
 export class WordEngine extends DocumentEngine {
-  private content: TextBlock[] = [
-    { text: 'Welcome to Asan Word', font: 'Arial', fontSize: 32, color: '#2b579a', x: 50, y: 100 },
-    { text: 'This is a canvas-based high-performance rendering engine.', font: 'Arial', fontSize: 16, color: '#333333', x: 50, y: 150 },
-    { text: 'Start typing to begin your document...', font: 'Arial', fontSize: 14, color: '#999999', x: 50, y: 180 },
-  ];
+  private document: WordDocument = {
+    paragraphs: [
+      {
+        alignment: 'left',
+        runs: [
+          { text: 'Asan Office ', bold: true, fontSize: 24, fontFamily: 'Arial', color: '#2b579a' },
+          { text: 'Advanced Word Processor', bold: false, italic: true, fontSize: 18, fontFamily: 'Arial', color: '#666666' }
+        ]
+      },
+      {
+        alignment: 'left',
+        runs: [
+          { text: 'Experience seamless offline editing with professional formatting tools.', fontSize: 12, fontFamily: 'Arial', color: '#333333' }
+        ]
+      }
+    ]
+  };
+
+  private cursor = { paragraphIndex: 0, runIndex: 0, charIndex: 0 };
+  private blink = true;
+
+  constructor() {
+    super();
+    setInterval(() => { this.blink = !this.blink; }, 500);
+  }
 
   render(ctx: CanvasRenderingContext2D, viewport: Rect): void {
-    // Clear
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(viewport.x, viewport.y, viewport.width, viewport.height);
 
-    // Render Blocks
-    this.content.forEach(block => {
-      ctx.font = `${block.fontSize}px ${block.font}`;
-      ctx.fillStyle = block.color;
-      ctx.fillText(block.text, block.x, block.y);
+    let currentY = 100;
+    const marginX = 72;
+    const pageWidth = viewport.width - (marginX * 2);
+
+    this.document.paragraphs.forEach((para, pIdx) => {
+      let currentX = marginX;
+      let maxHeightInLine = 0;
+
+      para.runs.forEach((run, rIdx) => {
+        ctx.font = `${run.bold ? 'bold ' : ''}${run.italic ? 'italic ' : ''}${run.fontSize}px ${run.fontFamily}`;
+        ctx.fillStyle = run.color;
+
+        const metrics = ctx.measureText(run.text);
+        maxHeightInLine = Math.max(maxHeightInLine, run.fontSize * 1.2);
+
+        if (currentX + metrics.width > marginX + pageWidth) {
+           currentX = marginX;
+           currentY += maxHeightInLine;
+        }
+
+        ctx.fillText(run.text, currentX, currentY);
+
+        // Render Cursor
+        if (this.blink && pIdx === this.cursor.paragraphIndex && rIdx === this.cursor.runIndex) {
+           const beforeCursorText = run.text.slice(0, this.cursor.charIndex);
+           const cursorX = currentX + ctx.measureText(beforeCursorText).width;
+           ctx.beginPath();
+           ctx.moveTo(cursorX, currentY - run.fontSize);
+           ctx.lineTo(cursorX, currentY + (run.fontSize * 0.2));
+           ctx.strokeStyle = '#000000';
+           ctx.stroke();
+        }
+
+        if (run.underline) {
+          ctx.beginPath();
+          ctx.moveTo(currentX, currentY + 2);
+          ctx.lineTo(currentX + metrics.width, currentY + 2);
+          ctx.stroke();
+        }
+
+        currentX += metrics.width;
+      });
+
+      currentY += maxHeightInLine + 10;
     });
   }
 
   handleInput(event: any): void {
-    // Basic text insertion logic (simplified)
-    if (event.type === 'keydown' && event.key.length === 1) {
-       const lastBlock = this.content[this.content.length - 1];
-       lastBlock.text += event.key;
-    } else if (event.type === 'keydown' && event.key === 'Backspace') {
-       const lastBlock = this.content[this.content.length - 1];
-       lastBlock.text = lastBlock.text.slice(0, -1);
+    if (event.type === 'keydown') {
+      const { key } = event;
+      const para = this.document.paragraphs[this.cursor.paragraphIndex];
+      const run = para.runs[this.cursor.runIndex];
+
+      if (key.length === 1) {
+        run.text = run.text.slice(0, this.cursor.charIndex) + key + run.text.slice(this.cursor.charIndex);
+        this.cursor.charIndex++;
+      } else if (key === 'Backspace' && this.cursor.charIndex > 0) {
+        run.text = run.text.slice(0, this.cursor.charIndex - 1) + run.text.slice(this.cursor.charIndex);
+        this.cursor.charIndex--;
+      } else if (key === 'ArrowLeft' && this.cursor.charIndex > 0) {
+        this.cursor.charIndex--;
+      } else if (key === 'ArrowRight' && this.cursor.charIndex < run.text.length) {
+        this.cursor.charIndex++;
+      }
     }
+  }
+
+  toggleBold(): void {
+     const para = this.document.paragraphs[this.cursor.paragraphIndex];
+     const run = para.runs[this.cursor.runIndex];
+     run.bold = !run.bold;
+  }
+
+  toggleItalic(): void {
+     const para = this.document.paragraphs[this.cursor.paragraphIndex];
+     const run = para.runs[this.cursor.runIndex];
+     run.italic = !run.italic;
   }
 }
