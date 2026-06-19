@@ -1,40 +1,88 @@
 import React, { useRef, useEffect } from 'react'
-import { WordEngine } from './WordEngine'
+import { Editor } from '@hufe921/canvas-editor'
+import { saveToOPFS, readFromOPFS } from '../../core/storage/opfs'
+import { saveDocumentMetadata } from '../../core/storage/db'
 
-export const WordCanvas: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engineRef = useRef<WordEngine>(new WordEngine());
+interface WordCanvasProps {
+  onEditorReady?: (editor: Editor) => void;
+  documentId?: string;
+}
+
+export const WordCanvas: React.FC<WordCanvasProps> = ({ onEditorReady, documentId }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!containerRef.current) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const editor = new Editor(containerRef.current, [
+      {
+        value: 'Welcome to Asan Word\n',
+          size: 32,
+          color: '#2b579a',
+          bold: true
+      } as any,
+        {
+          value: 'A high-performance, AI-native word processor.\n',
+          size: 16,
+          color: '#333333'
+      } as any,
+        {
+          value: 'Start typing to begin your document...',
+          size: 14,
+          color: '#999999'
+      } as any
+      ], {
+      margins: [100, 100, 100, 100],
+      width: 816,
+      height: 1056,
+    });
 
-    const render = () => {
-      engineRef.current.render(ctx, { x: 0, y: 0, width: canvas.width, height: canvas.height });
-      requestAnimationFrame(render);
-    };
+    editorRef.current = editor;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      engineRef.current.handleInput({ type: 'keydown', key: e.key });
-    };
+    // Auto-load if documentId is provided
+    if (documentId) {
+       readFromOPFS(`word_${documentId}.json`).then(data => {
+          if (data) {
+             const decoder = new TextDecoder();
+             const json = JSON.parse(decoder.decode(data));
+             editor.command.executeSetValue(json);
+          }
+       }).catch(() => {});
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
-    render();
+    // Auto-save logic
+    const saveInterval = setInterval(async () => {
+       if (editorRef.current) {
+          const content = JSON.stringify(editorRef.current.command.getValue());
+          const encoder = new TextEncoder();
+          const buffer = encoder.encode(content).buffer as ArrayBuffer;
+          const id = documentId || 'unsaved';
+          await saveToOPFS(`word_${id}.json`, buffer);
+          await saveDocumentMetadata({
+             id,
+             name: `Document ${id}`,
+             type: 'Word',
+             lastModified: Date.now()
+          });
+       }
+    }, 30000);
+
+    if (onEditorReady) {
+      onEditorReady(editor);
+    }
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      clearInterval(saveInterval);
+      editor.destroy();
     };
-  }, []);
+  }, [onEditorReady, documentId]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={816}
-      height={1056}
-      className="bg-white shadow-lg cursor-text"
+    <div
+      ref={containerRef}
+      className="bg-office-neutral-200 shadow-stitch"
+      style={{ width: '816px', height: '1056px' }}
     />
   )
 }
