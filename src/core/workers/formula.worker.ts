@@ -1,7 +1,7 @@
-// Placeholder for Asan Sheet Formula Engine
+import { evaluateFormula } from '../engine/formula';
+
 self.onmessage = (e) => {
-  const { formula } = e.data;
-  // TODO: Implement formula evaluation logic here (using WASM engine)
-  console.log('Evaluating formula:', formula);
-  self.postMessage({ result: 'PENDING' });
+  const { formula, context } = e.data;
+  const result = evaluateFormula(formula, context);
+  self.postMessage({ result });
 };
