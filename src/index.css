@@ -1,17 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-office-word: #2b579a;
+  --color-office-sheet: #217346;
+  --color-office-slide: #d24726;
+  --color-office-pdf: #b30b00;
+  --color-office-blue: #005a9e;
+
+  --color-stitch-neutral-50: #faf9f8;
+  --color-stitch-neutral-100: #f3f2f1;
+  --color-stitch-neutral-200: #edebe9;
+  --color-stitch-neutral-300: #e1dfdd;
+  --color-stitch-neutral-400: #d2d0ce;
+  --color-stitch-neutral-500: #c8c6c4;
+  --color-stitch-neutral-600: #a19f9d;
+  --color-stitch-neutral-700: #605e5c;
+  --color-stitch-neutral-800: #323130;
+  --color-stitch-neutral-900: #201f1e;
+}
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  background-color: var(--color-stitch-neutral-50);
+  color: var(--color-stitch-neutral-900);
 }
 
 body {
   margin: 0;
   display: flex;
-  place-content: center;
   min-width: 320px;
   min-height: 100vh;
+}
+
+#root {
+  width: 100%;
 }
